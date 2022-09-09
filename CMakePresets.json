@@ -1,0 +1,157 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 21
+    },
+    "configurePresets": [
+      {
+        "name": "default",
+        "hidden": true,
+        "cacheVariables": {
+          "PRESET_NAME": {
+            "type": "STRING",
+            "value": "${presetName}"
+          }
+        }
+      },
+      {
+        "name": "windows",
+        "hidden": true,
+        "cmakeExecutable": "cmake.exe"
+      },
+      {
+        "name": "ninja",
+        "hidden": true,
+        "generator": "Ninja"
+      },
+      {
+        "name": "release",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": {
+            "type": "STRING",
+            "value": "Release"
+          }
+        }
+      },
+      {
+        "name": "debug",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": {
+            "type": "STRING",
+            "value": "Debug"
+          }
+        }
+      },
+      {
+        "name": "static",
+        "hidden": true,
+        "cacheVariables": {
+          "BUILD_SHARED_LIBS": {
+            "type": "BOOL",
+            "value": false
+          }
+        }
+      },
+      {
+        "name": "shared",
+        "hidden": true,
+        "cacheVariables": {
+          "BUILD_SHARED_LIBS": {
+            "type": "BOOL",
+            "value": true
+          }
+        }
+      },
+      {
+        "name": "mt",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_MSVC_RUNTIME_LIBRARY": {
+            "type": "STRING",
+            "value": "MultiThreaded"
+          }
+        }
+      },
+      {
+        "name": "md",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_MSVC_RUNTIME_LIBRARY": {
+            "type": "STRING",
+            "value": "MultiThreadedDLL"
+          }
+        }
+      },
+      {
+        "name": "mtd",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_MSVC_RUNTIME_LIBRARY": {
+            "type": "STRING",
+            "value": "MultiThreadedDebug"
+          }
+        }
+      },
+      {
+        "name": "mdd",
+        "hidden": true,
+        "cacheVariables": {
+          "CMAKE_MSVC_RUNTIME_LIBRARY": {
+            "type": "STRING",
+            "value": "MultiThreadedDebugDLL"
+          }
+        }
+      },
+  
+      {
+        "name": "windows.ninja.debug.shared",
+        "inherits": [ "default", "windows", "ninja", "debug", "shared", "mdd" ],
+        "binaryDir": "${sourceDir}/build/db-sh"
+      },
+      {
+        "name": "windows.ninja.debug.static",
+        "inherits": [ "default", "windows", "ninja", "debug", "static", "mtd" ],
+        "binaryDir": "${sourceDir}/build/db-st"
+      },
+      {
+        "name": "windows.ninja.release.shared",
+        "inherits": [ "default", "windows", "ninja", "release", "shared", "md" ],
+        "binaryDir": "${sourceDir}/build/re-sh"
+      },
+      {
+        "name": "windows.ninja.release.static",
+        "inherits": [ "default", "windows", "ninja", "release", "static", "mt" ],
+        "binaryDir": "${sourceDir}/build/re-st"
+      }
+    ],
+    "buildPresets": [
+      {
+        "name": "default",
+        "hidden": true,
+        "jobs": 3
+      },
+      {
+        "name": "windows.ninja.debug.shared",
+        "configurePreset": "windows.ninja.debug.shared",
+        "inherits": [ "default" ]
+      },
+      {
+        "name": "windows.ninja.debug.static",
+        "configurePreset": "windows.ninja.debug.static",
+        "inherits": [ "default" ]
+      },
+      {
+        "name": "windows.ninja.release.shared",
+        "configurePreset": "windows.ninja.release.shared",
+        "inherits": [ "default" ]
+      },
+      {
+        "name": "windows.ninja.release.static",
+        "configurePreset": "windows.ninja.release.static",
+        "inherits": [ "default" ]
+      }
+    ]
+  }
