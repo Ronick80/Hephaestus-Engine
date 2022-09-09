@@ -16,6 +16,11 @@ include("config.cmake")
 # add the exqudens cpp vulkan library as a subdirectory
 add_subdirectory("exqudens-cpp-vulkan")
 
+# find the package for glfw for this project since it's only found in 
+# the exqudens project
+set(CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/exqudens-cpp-vulkan/conan-install")
+find_package("glfw3")
+
 # create executable for the main project
 add_executable(${PROJECT_NAME}
     "src/main.cpp"
@@ -41,7 +46,9 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
 )
 
+
 target_link_libraries(${PROJECT_NAME}
     "exqudens-cpp-vulkan"
+    "glfw"
 )
 
