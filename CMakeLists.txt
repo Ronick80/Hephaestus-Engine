@@ -9,8 +9,11 @@ project("${NAME}" VERSION "${VERSION}" LANGUAGES "NONE")
 
 message("project: '${PROJECT_NAME}-${PROJECT_VERSION}'")
 
+# include setup .cmake scripts
 include("util.cmake")
 include("config.cmake")
+
+# add the exqudens cpp vulkan library as a subdirectory
 add_subdirectory("exqudens-cpp-vulkan")
 
 #set_conan_settings(CONAN_SETTINGS
