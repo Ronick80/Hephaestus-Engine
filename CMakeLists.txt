@@ -24,7 +24,7 @@ find_package("glfw3")
 # create executable for the main project
 add_executable(${PROJECT_NAME}
     "src/main.cpp"
- "src/ErrorUtils.cpp")
+ "src/ErrorUtils.cpp" "src/VulkanContext.cpp")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/bin"
