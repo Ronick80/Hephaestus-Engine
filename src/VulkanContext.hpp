@@ -3,6 +3,7 @@
 #include "exqudens/vulkan/Instance.hpp"
 #include "exqudens/vulkan/Device.hpp"
 #include "exqudens/vulkan/PhysicalDevice.hpp"
+#include "exqudens/vulkan/RenderPass.hpp"
 #include "exqudens/vulkan/Surface.hpp"
 #include "exqudens/vulkan/SwapChain.hpp"
 #include "utils.hpp"
@@ -31,6 +32,7 @@ private:
     PhysicalDevice physicalDevice_;
     Device device_;
     Swapchain swapChain_;
+    RenderPass renderPass_;
 
     void createInstance();
      
@@ -42,4 +44,5 @@ private:
 
     void createSwapChain(uint32_t width, uint32_t height);
 
+    void createRenderPass();
 };

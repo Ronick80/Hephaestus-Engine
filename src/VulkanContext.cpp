@@ -1,4 +1,7 @@
+#define EXQUDENS_CPP_VULKAN_IMPLEMENTATION
 #include "VulkanContext.hpp"
+#include "exqudens/vulkan/SubpassDescription.hpp"
+#include <GLFW/glfw3.h>
 #include <iostream>
 #include <format>
 
@@ -14,6 +17,12 @@ void VulkanContext::init(GLFWwindow* window) {
     createSurface(window);
     createPhysicalDevice();
     createLogicalDevice();
+    // need to extract the width and height of the frame buffer 
+    // from glfw for creating the swap chain
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    createSwapChain(width, height);
+    createRenderPass();
 }
 
 void VulkanContext::createInstance() {
@@ -113,4 +122,58 @@ void VulkanContext::createSwapChain(uint32_t width, uint32_t height) {
         )
         .build();
     std::cout << std::format("swapchain: '{}'", (bool)swapChain_.value) << std::endl;
+}
+
+void VulkanContext::createRenderPass() {
+    vk::AttachmentDescription;
+
+    renderPass_ = RenderPass::builder()
+        .setDevice(device_.value)
+        // add the color attachment 
+        .addAttachment(
+            vk::AttachmentDescription(
+                vk::AttachmentDescriptionFlags(),
+                vk::Format::eR8G8B8A8Srgb,
+                vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eColorAttachmentOptimal
+            )
+        )
+        // add the depth attachment
+        .addAttachment(
+            vk::AttachmentDescription(
+                vk::AttachmentDescriptionFlags(),
+                vk::Format::eD32Sfloat,
+                vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare,
+                vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eColorAttachmentOptimal
+            )
+        )
+        // might need this is the future but for now just put it here
+        // for reference. 
+        //.addDependency(vk::SubpassDependency())
+        .addSubpass(
+            SubpassDescription()
+            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+            .addColorAttachment(
+                vk::AttachmentReference()
+                .setAttachment(0)
+                .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            )
+            .setDepthStencilAttachment(
+                vk::AttachmentReference()
+                .setAttachment(1)
+                .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            )
+        )
+        .build();
+    std::cout << std::format("RenderPass: '{}'", (bool)renderPass_.value) << std::endl;
 }
