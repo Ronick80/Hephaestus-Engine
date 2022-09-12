@@ -1,7 +1,9 @@
 #pragma once
 
 #include "exqudens/vulkan/Instance.hpp"
+#include "exqudens/vulkan/ImageView.hpp"
 #include "exqudens/vulkan/Device.hpp"
+#include "exqudens/vulkan/Framebuffer.hpp"
 #include "exqudens/vulkan/PhysicalDevice.hpp"
 #include "exqudens/vulkan/RenderPass.hpp"
 #include "exqudens/vulkan/Surface.hpp"
@@ -32,7 +34,10 @@ private:
     PhysicalDevice physicalDevice_;
     Device device_;
     Swapchain swapChain_;
+    vk::Format swapChainImageFormat_;
+    std::vector<ImageView> swapChainImageViews_;
     RenderPass renderPass_;
+    Framebuffer framebuffer_;
 
     void createInstance();
      
@@ -45,4 +50,11 @@ private:
     void createSwapChain(uint32_t width, uint32_t height);
 
     void createRenderPass();
+
+    void createDepthBuffer();
+
+    void createFrameBuffer();
+
+    void createGraphicsPipeline();
 };
+

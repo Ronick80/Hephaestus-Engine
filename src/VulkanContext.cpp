@@ -122,6 +122,33 @@ void VulkanContext::createSwapChain(uint32_t width, uint32_t height) {
         )
         .build();
     std::cout << std::format("swapchain: '{}'", (bool)swapChain_.value) << std::endl;
+    // set the swap chain image format that was determined during swap chain image 
+    // creation
+    swapChainImageFormat_ = swapChain_.createInfo.imageFormat;
+
+    // create the VkImageViews for the swap chains
+    for (const VkImage& vkImage : swapChain_.reference().getImages()) {
+        // create swap chain image view using the 
+        swapChainImageViews_.emplace_back(ImageView::builder()
+            .setDevice(device_.value)
+            .setCreateInfo(
+                vk::ImageViewCreateInfo()
+                .setFlags({})
+                .setImage(static_cast<vk::Image>(vkImage))
+                .setViewType(vk::ImageViewType::e2D)
+                .setFormat(swapChainImageFormat_)
+                .setComponents({})
+                .setSubresourceRange(
+                    vk::ImageSubresourceRange()
+                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                    .setBaseMipLevel(0)
+                    .setLevelCount(1)
+                    .setBaseArrayLayer(0)
+                    .setLayerCount(1)
+                )
+            )
+            .build());
+    }
 }
 
 void VulkanContext::createRenderPass() {
@@ -133,7 +160,7 @@ void VulkanContext::createRenderPass() {
         .addAttachment(
             vk::AttachmentDescription(
                 vk::AttachmentDescriptionFlags(),
-                vk::Format::eR8G8B8A8Srgb,
+                swapChainImageFormat_,
                 vk::SampleCountFlagBits::e1,
                 vk::AttachmentLoadOp::eClear,
                 vk::AttachmentStoreOp::eStore,
@@ -176,4 +203,17 @@ void VulkanContext::createRenderPass() {
         )
         .build();
     std::cout << std::format("RenderPass: '{}'", (bool)renderPass_.value) << std::endl;
+}
+
+void VulkanContext::createDepthBuffer()
+{
+
+}
+
+void VulkanContext::createFrameBuffer()
+{
+    framebuffer_ = Framebuffer::builder()
+        .addAttachment(swapChainImageViews_)
+        .
+        .build()
 }
