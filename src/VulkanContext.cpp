@@ -2,6 +2,7 @@
 #define EXQUDENS_CPP_VULKAN_IMPLEMENTATION
 #include "VulkanContext.hpp"
 #include "exqudens/vulkan/SubpassDescription.hpp"
+#include "exqudens/vulkan/GraphicsPipelineCreateInfo.hpp"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <format>
@@ -307,7 +308,7 @@ void VulkanContext::createFrameBuffer()
                 )
                 .build());
         }
-        std::ranges::for_each(swapChainImageViews_, [](const auto& o1) {std::cout << std::format("swapchainImageViews: '{}'", (bool)o1.value) << std::endl; });
+        std::ranges::for_each(swapChainImageViews_, [](const auto& o1) {std::cout << std::format("framebuffers: '{}'", (bool)o1.value) << std::endl; });
     }
     catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO()));
@@ -316,4 +317,99 @@ void VulkanContext::createFrameBuffer()
 
 void VulkanContext::createGraphicsPipeline()
 {
+    try {
+        pipeline_ = Pipeline::builder()
+            .setDevice(device_.value)
+            .addPath("resources/shader/shader-4.vert.spv")
+            .addPath("resources/shader/shader-4.frag.spv")
+            .addSetLayout(*descriptorSetLayout_.reference())
+            .setGraphicsCreateInfo(
+                GraphicsPipelineCreateInfo()
+                .setRenderPass(*renderPass.reference())
+                .setSubpass(0)
+                .setVertexInputState(
+                    PipelineVertexInputStateCreateInfo()
+                    .setVertexBindingDescriptions({ Vertex::getBindingDescription() })
+                    .setVertexAttributeDescriptions(Vertex::getAttributeDescriptions())
+                )
+                .setInputAssemblyState(
+                    vk::PipelineInputAssemblyStateCreateInfo()
+                    .setTopology(vk::PrimitiveTopology::eTriangleList)
+                    .setPrimitiveRestartEnable(false)
+                )
+                .setViewportState(
+                    PipelineViewportStateCreateInfo()
+                    .setViewports({
+                        vk::Viewport()
+                            .setWidth((float)swapchain.createInfo.imageExtent.width)
+                            .setHeight((float)swapchain.createInfo.imageExtent.height)
+                            .setMinDepth(0.0)
+                            .setMaxDepth(1.0)
+                            .setX(0.0)
+                            .setY(0.0)
+                        })
+                    .setScissors({
+                        vk::Rect2D()
+                            .setOffset({0, 0})
+                            .setExtent(swapchain.createInfo.imageExtent)
+                        })
+                )
+                .setRasterizationState(
+                    vk::PipelineRasterizationStateCreateInfo()
+                    .setDepthClampEnable(false)
+                    .setRasterizerDiscardEnable(false)
+                    .setPolygonMode(vk::PolygonMode::eFill)
+                    .setCullMode(vk::CullModeFlagBits::eBack)
+                    .setFrontFace(vk::FrontFace::eCounterClockwise)
+                    .setLineWidth(1.0)
+                    .setDepthBiasEnable(false)
+                    .setDepthBiasConstantFactor(0.0)
+                    .setDepthBiasClamp(0.0)
+                    .setDepthBiasSlopeFactor(0.0)
+                )
+                .setMultisampleState(
+                    vk::PipelineMultisampleStateCreateInfo()
+                    .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+                    .setSampleShadingEnable(false)
+                    .setMinSampleShading(1.0)
+                    .setPSampleMask(nullptr)
+                    .setAlphaToCoverageEnable(false)
+                    .setAlphaToOneEnable(false)
+                )
+                .setDepthStencilState(
+                    vk::PipelineDepthStencilStateCreateInfo()
+                    .setDepthTestEnable(true)
+                    .setDepthWriteEnable(true)
+                    .setDepthCompareOp(vk::CompareOp::eLess)
+                    .setDepthBoundsTestEnable(false)
+                    .setStencilTestEnable(false)
+                    .setFront({})
+                    .setBack({})
+                    .setMinDepthBounds(0.0)
+                    .setMaxDepthBounds(1.0)
+                )
+                .setColorBlendState(
+                    PipelineColorBlendStateCreateInfo()
+                    .setLogicOpEnable(false)
+                    .setLogicOp(vk::LogicOp::eCopy)
+                    .setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f })
+                    .setAttachments({
+                        vk::PipelineColorBlendAttachmentState()
+                            .setBlendEnable(false)
+                            .setColorBlendOp(vk::BlendOp::eAdd)
+                            .setSrcColorBlendFactor(vk::BlendFactor::eOne)
+                            .setDstColorBlendFactor(vk::BlendFactor::eZero)
+                            .setAlphaBlendOp(vk::BlendOp::eAdd)
+                            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                            .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+                            .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+                        })
+                )
+            )
+            .build();
+        std::cout << std::format("pipeline: '{}'", (bool)pipeline_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
 }

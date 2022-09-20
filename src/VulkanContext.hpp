@@ -9,6 +9,7 @@
 #include "exqudens/vulkan/RenderPass.hpp"
 #include "exqudens/vulkan/Surface.hpp"
 #include "exqudens/vulkan/SwapChain.hpp"
+#include "exqudens/vulkan/Pipeline.hpp"
 #include "utils.hpp"
 #include <GLFW/glfw3.h>
 
@@ -41,6 +42,7 @@ private:
     ImageView depthBufferImageView_;
     RenderPass renderPass_;
     std::vector<Framebuffer> framebuffers_;
+    Pipeline pipeline_;
 
     void createInstance();
      
