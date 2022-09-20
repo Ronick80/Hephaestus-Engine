@@ -1,3 +1,4 @@
+#include "VulkanContext.hpp"
 #define EXQUDENS_CPP_VULKAN_IMPLEMENTATION
 #include "VulkanContext.hpp"
 #include "exqudens/vulkan/SubpassDescription.hpp"
@@ -22,198 +23,297 @@ void VulkanContext::init(GLFWwindow* window) {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     createSwapChain(width, height);
+    createDepthBuffer();
     createRenderPass();
+    createFrameBuffer();
 }
 
 void VulkanContext::createInstance() {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    std::vector<const char*> glfwInstanceRequiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-    std::vector<const char*> enabledExtensionNames = glfwInstanceRequiredExtensions;
-    enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    try {
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions;
+        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        std::vector<const char*> glfwInstanceRequiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        std::vector<const char*> enabledExtensionNames = glfwInstanceRequiredExtensions;
+        enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-    instance_ = Instance::builder()
-        .addEnabledLayerName("VK_LAYER_KHRONOS_validation")
-        .setEnabledExtensionNames(enabledExtensionNames)
-        .setApplicationInfo(
-            vk::ApplicationInfo()
-            .setPApplicationName("Exqudens Application")
-            .setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
-            .setPEngineName("Exqudens Engine")
-            .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
-            .setApiVersion(VK_MAKE_API_VERSION(0, 1, 3, 0))
-        )
-        .setMessengerCreateInfo(
-            MessengerCreateInfo()
-            .setExceptionSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
-            .setOutSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
-            .setToStringFunction(&Utility::toString)
-        )
-        .setDebugUtilsMessengerCreateInfo(
-            vk::DebugUtilsMessengerCreateInfoEXT()
-            .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
-            .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
-        )
-        .build();
-    std::cout << std::format("instance: '{}'", (bool)instance_.value) << std::endl;
+        instance_ = Instance::builder()
+            .addEnabledLayerName("VK_LAYER_KHRONOS_validation")
+            .setEnabledExtensionNames(enabledExtensionNames)
+            .setApplicationInfo(
+                vk::ApplicationInfo()
+                .setPApplicationName("Exqudens Application")
+                .setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
+                .setPEngineName("Exqudens Engine")
+                .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+                .setApiVersion(VK_MAKE_API_VERSION(0, 1, 3, 0))
+            )
+            .setMessengerCreateInfo(
+                MessengerCreateInfo()
+                .setExceptionSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+                .setOutSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
+                .setToStringFunction(&Utility::toString)
+            )
+            .setDebugUtilsMessengerCreateInfo(
+                vk::DebugUtilsMessengerCreateInfoEXT()
+                .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+                .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+            )
+            .build();
+        std::cout << std::format("instance: '{}'", (bool)instance_.value) << std::endl;
+    } catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
 }
  
 void VulkanContext::createSurface(GLFWwindow* window) {
     // create surface for glfw. TODOMG In the future this will need to be done completely
     // differently. Just want to do this for now. In the future this will need to support 
     // different surfaces.
-
-    VkSurfaceKHR vkSurface = nullptr;
-    auto vkInstance = static_cast<VkInstance>(*instance_.reference());
-    if (glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface) != VK_SUCCESS) {
-        throw std::runtime_error(CALL_INFO() + ": failed to create surface!");
+    try {
+        VkSurfaceKHR vkSurface = nullptr;
+        auto vkInstance = static_cast<VkInstance>(*instance_.reference());
+        if (glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface) != VK_SUCCESS) {
+            throw std::runtime_error(CALL_INFO() + ": failed to create surface!");
+        }
+        if (vkSurface == nullptr) {
+            throw std::runtime_error(CALL_INFO() + ": surface is null!");
+        }
+        surface_ = Surface::builder()
+            .setInstance(instance_.value)
+            .setVkSurface(vkSurface)
+            .build();
+        std::cout << std::format("surface: '{}'", (bool)surface_.value) << std::endl;
     }
-    if (vkSurface == nullptr) {
-        throw std::runtime_error(CALL_INFO() + ": surface is null!");
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
     }
-    surface_ = Surface::builder()
-        .setInstance(instance_.value)
-        .setVkSurface(vkSurface)
-        .build();
-    std::cout << std::format("surface: '{}'", (bool)surface_.value) << std::endl;
 }
 
 void VulkanContext::createPhysicalDevice() {
-    physicalDevice_ = PhysicalDevice::builder()
-        .setInstance(instance_.value)
-        .setSurface(surface_.value)
-        .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
-        .setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true))
-        .addQueueType(vk::QueueFlagBits::eCompute)
-        .addQueueType(vk::QueueFlagBits::eTransfer)
-        .addQueueType(vk::QueueFlagBits::eGraphics)
-        .setQueuePriority(1.0f)
-        .build();
-    std::cout << std::format("physicalDevice: '{}'", (bool)physicalDevice_.value) << std::endl;
+    try {
+        physicalDevice_ = PhysicalDevice::builder()
+            .setInstance(instance_.value)
+            .setSurface(surface_.value)
+            .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+            .setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true))
+            .addQueueType(vk::QueueFlagBits::eCompute)
+            .addQueueType(vk::QueueFlagBits::eTransfer)
+            .addQueueType(vk::QueueFlagBits::eGraphics)
+            .setQueuePriority(1.0f)
+            .build();
+        std::cout << std::format("physicalDevice: '{}'", (bool)physicalDevice_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
 }
 
 void VulkanContext::createLogicalDevice() {
-    device_ = Device::builder()
-        .setPhysicalDevice(physicalDevice_.value)
-        .setCreateInfo(
-            vk::DeviceCreateInfo()
-            .setQueueCreateInfos(physicalDevice_.uniqueQueueCreateInfos)
-            .setPEnabledFeatures(&physicalDevice_.features)
-            .setPEnabledExtensionNames(physicalDevice_.enabledExtensionNames)
-            .setPEnabledLayerNames(instance_.enabledLayerNames)
-        )
-        .build();
-    std::cout << std::format("device: '{}'", (bool)device_.value) << std::endl;
+    try {
+        device_ = Device::builder()
+            .setPhysicalDevice(physicalDevice_.value)
+            .setCreateInfo(
+                vk::DeviceCreateInfo()
+                .setQueueCreateInfos(physicalDevice_.uniqueQueueCreateInfos)
+                .setPEnabledFeatures(&physicalDevice_.features)
+                .setPEnabledExtensionNames(physicalDevice_.enabledExtensionNames)
+                .setPEnabledLayerNames(instance_.enabledLayerNames)
+            )
+            .build();
+        std::cout << std::format("device: '{}'", (bool)device_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
 }
 
 void VulkanContext::createSwapChain(uint32_t width, uint32_t height) {
-    swapChain_ = Swapchain::builder()
-        .setDevice(device_.value)
-        .addGraphicsQueueFamilyIndex(physicalDevice_.graphicsQueueCreateInfos.front().queueFamilyIndex)
-        .addPresentQueueFamilyIndex(physicalDevice_.presentQueueCreateInfos.front().queueFamilyIndex)
-        .setCreateInfo(
-            Utility::swapChainCreateInfo(
-                physicalDevice_.reference(),
-                surface_.reference(),
-                width,
-                height
+    try {
+        swapChain_ = Swapchain::builder()
+            .setDevice(device_.value)
+            .addGraphicsQueueFamilyIndex(physicalDevice_.graphicsQueueCreateInfos.front().queueFamilyIndex)
+            .addPresentQueueFamilyIndex(physicalDevice_.presentQueueCreateInfos.front().queueFamilyIndex)
+            .setCreateInfo(
+                Utility::swapChainCreateInfo(
+                    physicalDevice_.reference(),
+                    surface_.reference(),
+                    width,
+                    height
+                )
             )
-        )
-        .build();
-    std::cout << std::format("swapchain: '{}'", (bool)swapChain_.value) << std::endl;
-    // set the swap chain image format that was determined during swap chain image 
-    // creation
-    swapChainImageFormat_ = swapChain_.createInfo.imageFormat;
+            .build();
+        std::cout << std::format("swapchain: '{}'", (bool)swapChain_.value) << std::endl;
+        // set the swap chain image format that was determined during swap chain image 
+        // creation
+        swapChainImageFormat_ = swapChain_.createInfo.imageFormat;
 
-    // create the VkImageViews for the swap chains
-    for (const VkImage& vkImage : swapChain_.reference().getImages()) {
-        // create swap chain image view using the 
-        swapChainImageViews_.emplace_back(ImageView::builder()
+        // create the VkImageViews for the swap chains
+        for (const VkImage& vkImage : swapChain_.reference().getImages()) {
+            // create swap chain image view using the 
+            swapChainImageViews_.emplace_back(ImageView::builder()
+                .setDevice(device_.value)
+                .setCreateInfo(
+                    vk::ImageViewCreateInfo()
+                    .setFlags({})
+                    .setImage(static_cast<vk::Image>(vkImage))
+                    .setViewType(vk::ImageViewType::e2D)
+                    .setFormat(swapChainImageFormat_)
+                    .setComponents({})
+                    .setSubresourceRange(
+                        vk::ImageSubresourceRange()
+                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                        .setBaseMipLevel(0)
+                        .setLevelCount(1)
+                        .setBaseArrayLayer(0)
+                        .setLayerCount(1)
+                    )
+                )
+                .build());
+        }
+        std::ranges::for_each(swapChainImageViews_, [](const auto& o1) {std::cout << std::format("swapchainImageViews: '{}'", (bool)o1.value) << std::endl; });
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+}
+
+void VulkanContext::createRenderPass() {
+    try {
+        renderPass_ = RenderPass::builder()
+            .setDevice(device_.value)
+            // add the color attachment 
+            .addAttachment(
+                vk::AttachmentDescription(
+                    vk::AttachmentDescriptionFlags(),
+                    swapChainImageFormat_,
+                    vk::SampleCountFlagBits::e1,
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eDontCare,
+                    vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::ImageLayout::eColorAttachmentOptimal
+                )
+            )
+            // add the depth attachment
+            .addAttachment(
+                vk::AttachmentDescription(
+                    vk::AttachmentDescriptionFlags(),
+                    vk::Format::eD32Sfloat,
+                    vk::SampleCountFlagBits::e1,
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::AttachmentLoadOp::eDontCare,
+                    vk::AttachmentStoreOp::eDontCare,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal
+                )
+            )
+            // might need this is the future but for now just put it here
+            // for reference. 
+            //.addDependency(vk::SubpassDependency())
+            .addSubpass(
+                SubpassDescription()
+                .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                .addColorAttachment(
+                    vk::AttachmentReference()
+                    .setAttachment(0)
+                    .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+                )
+                .setDepthStencilAttachment(
+                    vk::AttachmentReference()
+                    .setAttachment(1)
+                    .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                )
+            )
+            .build();
+        std::cout << std::format("RenderPass: '{}'", (bool)renderPass_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+}
+
+void VulkanContext::createDepthBuffer()
+{
+    try {
+        depthBuffer_ = Image::builder()
+            .setPhysicalDevice(physicalDevice_.value)
+            .setDevice(device_.value)
+            .setCreateInfo(
+                vk::ImageCreateInfo()
+                .setImageType(vk::ImageType::e2D)
+                .setFormat(Utility::imageDepthFormat(physicalDevice_.reference()))
+                .setExtent(
+                    vk::Extent3D()
+                    .setWidth(swapChain_.createInfo.imageExtent.width)
+                    .setHeight(swapChain_.createInfo.imageExtent.height)
+                    .setDepth(1)
+                )
+                .setMipLevels(1)
+                .setArrayLayers(1)
+                .setSamples(vk::SampleCountFlagBits::e1)
+                .setTiling(vk::ImageTiling::eOptimal)
+                .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
+                .setSharingMode(vk::SharingMode::eExclusive)
+                .setQueueFamilyIndices({})
+                .setInitialLayout(vk::ImageLayout::eUndefined)
+            )
+            .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
+            .build();
+        std::cout << std::format("depthBuffer: '{}'", (bool)depthBuffer_.value) << std::endl;
+        depthBufferImageView_ = ImageView::builder()
             .setDevice(device_.value)
             .setCreateInfo(
                 vk::ImageViewCreateInfo()
-                .setFlags({})
-                .setImage(static_cast<vk::Image>(vkImage))
+                .setImage(*depthBuffer_.reference())
+                .setFormat(depthBuffer_.createInfo.format)
                 .setViewType(vk::ImageViewType::e2D)
-                .setFormat(swapChainImageFormat_)
+                .setFlags({})
                 .setComponents({})
                 .setSubresourceRange(
                     vk::ImageSubresourceRange()
-                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                    .setAspectMask(vk::ImageAspectFlagBits::eDepth)
                     .setBaseMipLevel(0)
                     .setLevelCount(1)
                     .setBaseArrayLayer(0)
                     .setLayerCount(1)
                 )
             )
-            .build());
+            .build();
+        std::cout << std::format("depthBufferImageView: '{}'", (bool)depthBufferImageView_.value) << std::endl;
     }
-}
-
-void VulkanContext::createRenderPass() {
-    vk::AttachmentDescription;
-
-    renderPass_ = RenderPass::builder()
-        .setDevice(device_.value)
-        // add the color attachment 
-        .addAttachment(
-            vk::AttachmentDescription(
-                vk::AttachmentDescriptionFlags(),
-                swapChainImageFormat_,
-                vk::SampleCountFlagBits::e1,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
-            )
-        )
-        // add the depth attachment
-        .addAttachment(
-            vk::AttachmentDescription(
-                vk::AttachmentDescriptionFlags(),
-                vk::Format::eD32Sfloat,
-                vk::SampleCountFlagBits::e1,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::AttachmentLoadOp::eDontCare,
-                vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
-            )
-        )
-        // might need this is the future but for now just put it here
-        // for reference. 
-        //.addDependency(vk::SubpassDependency())
-        .addSubpass(
-            SubpassDescription()
-            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-            .addColorAttachment(
-                vk::AttachmentReference()
-                .setAttachment(0)
-                .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-            )
-            .setDepthStencilAttachment(
-                vk::AttachmentReference()
-                .setAttachment(1)
-                .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-            )
-        )
-        .build();
-    std::cout << std::format("RenderPass: '{}'", (bool)renderPass_.value) << std::endl;
-}
-
-void VulkanContext::createDepthBuffer()
-{
-
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
 }
 
 void VulkanContext::createFrameBuffer()
 {
-    framebuffer_ = Framebuffer::builder()
-        .addAttachment(swapChainImageViews_)
-        .
-        .build()
+    try {
+        for (auto& swapChainImage : swapChainImageViews_)
+        {
+            framebuffers_.push_back(Framebuffer::builder()
+                .setDevice(device_.value)
+                .addAttachment(*swapChainImage.reference())
+                .addAttachment(*depthBufferImageView_.reference())
+                .setCreateInfo(
+                    vk::FramebufferCreateInfo()
+                    .setRenderPass(*renderPass_.reference())
+                    .setWidth(swapChain_.createInfo.imageExtent.width)
+                    .setHeight(swapChain_.createInfo.imageExtent.height)
+                    .setLayers(1)
+                )
+                .build());
+        }
+        std::ranges::for_each(swapChainImageViews_, [](const auto& o1) {std::cout << std::format("swapchainImageViews: '{}'", (bool)o1.value) << std::endl; });
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+}
+
+void VulkanContext::createGraphicsPipeline()
+{
 }

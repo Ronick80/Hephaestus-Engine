@@ -2,6 +2,7 @@
 
 #include "exqudens/vulkan/Instance.hpp"
 #include "exqudens/vulkan/ImageView.hpp"
+#include "exqudens/vulkan/Image.hpp"
 #include "exqudens/vulkan/Device.hpp"
 #include "exqudens/vulkan/Framebuffer.hpp"
 #include "exqudens/vulkan/PhysicalDevice.hpp"
@@ -36,8 +37,10 @@ private:
     Swapchain swapChain_;
     vk::Format swapChainImageFormat_;
     std::vector<ImageView> swapChainImageViews_;
+    Image depthBuffer_;
+    ImageView depthBufferImageView_;
     RenderPass renderPass_;
-    Framebuffer framebuffer_;
+    std::vector<Framebuffer> framebuffers_;
 
     void createInstance();
      
@@ -49,9 +52,9 @@ private:
 
     void createSwapChain(uint32_t width, uint32_t height);
 
-    void createRenderPass();
-
     void createDepthBuffer();
+
+    void createRenderPass();
 
     void createFrameBuffer();
 
