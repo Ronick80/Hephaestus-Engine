@@ -27,6 +27,7 @@ void VulkanContext::init(GLFWwindow* window) {
     createDepthBuffer();
     createRenderPass();
     createFrameBuffer();
+    createGraphicsPipeline();
 }
 
 void VulkanContext::createInstance() {
@@ -98,9 +99,9 @@ void VulkanContext::createPhysicalDevice() {
             .setSurface(surface_.value)
             .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true))
-            .addQueueType(vk::QueueFlagBits::eCompute)
-            .addQueueType(vk::QueueFlagBits::eTransfer)
-            .addQueueType(vk::QueueFlagBits::eGraphics)
+            .addQueueRequirement(vk::QueueFlagBits::eCompute)
+            .addQueueRequirement(vk::QueueFlagBits::eTransfer)
+            .addQueueRequirement(vk::QueueFlagBits::eGraphics, true)
             .setQueuePriority(1.0f)
             .build();
         std::cout << std::format("physicalDevice: '{}'", (bool)physicalDevice_.value) << std::endl;
@@ -320,17 +321,17 @@ void VulkanContext::createGraphicsPipeline()
     try {
         pipeline_ = Pipeline::builder()
             .setDevice(device_.value)
-            .addPath("resources/shader/shader-4.vert.spv")
-            .addPath("resources/shader/shader-4.frag.spv")
-            .addSetLayout(*descriptorSetLayout_.reference())
+            .addPath("shaders/triangle.vert.spv")
+            .addPath("shaders/triangle.frag.spv")
+            //.addSetLayout(*descriptorSetLayout_.reference())
             .setGraphicsCreateInfo(
                 GraphicsPipelineCreateInfo()
-                .setRenderPass(*renderPass.reference())
+                .setRenderPass(*renderPass_.reference())
                 .setSubpass(0)
                 .setVertexInputState(
                     PipelineVertexInputStateCreateInfo()
-                    .setVertexBindingDescriptions({ Vertex::getBindingDescription() })
-                    .setVertexAttributeDescriptions(Vertex::getAttributeDescriptions())
+                    .setVertexBindingDescriptions({})
+                    .setVertexAttributeDescriptions({})
                 )
                 .setInputAssemblyState(
                     vk::PipelineInputAssemblyStateCreateInfo()
@@ -341,8 +342,8 @@ void VulkanContext::createGraphicsPipeline()
                     PipelineViewportStateCreateInfo()
                     .setViewports({
                         vk::Viewport()
-                            .setWidth((float)swapchain.createInfo.imageExtent.width)
-                            .setHeight((float)swapchain.createInfo.imageExtent.height)
+                            .setWidth((float)swapChain_.createInfo.imageExtent.width)
+                            .setHeight((float)swapChain_.createInfo.imageExtent.height)
                             .setMinDepth(0.0)
                             .setMaxDepth(1.0)
                             .setX(0.0)
@@ -351,7 +352,7 @@ void VulkanContext::createGraphicsPipeline()
                     .setScissors({
                         vk::Rect2D()
                             .setOffset({0, 0})
-                            .setExtent(swapchain.createInfo.imageExtent)
+                            .setExtent(swapChain_.createInfo.imageExtent)
                         })
                 )
                 .setRasterizationState(

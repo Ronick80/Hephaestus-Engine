@@ -21,8 +21,28 @@ add_subdirectory("exqudens-cpp-vulkan")
 set(CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/exqudens-cpp-vulkan/conan-install")
 find_package("glfw3")
 
+# find the package for glfw for this project since it's only found in 
+# the exqudens project
+set(CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/exqudens-cpp-vulkan/conan-install")
+find_package("Vulkan")
+# search the cmake module paths where the packages will be for the glslc executable inside the
+# vulkan package.
+find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${CMAKE_MODULE_PATH}/bin")
+
+# custom command for building shaders using add_custom_command
+add_custom_command(
+    OUTPUT "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.vert.spv"
+    OUTPUT "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.frag.spv"
+    COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-rf" "${PROJECT_BINARY_DIR}/main/bin/shaders"
+    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/main/bin/shaders"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/shaders/triangle.vert" -o "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.vert.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/shaders/triangle.frag" -o "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.frag.spv"
+)
+
 # create executable for the main project
 add_executable(${PROJECT_NAME}
+    "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.vert.spv"
+    "${PROJECT_BINARY_DIR}/main/bin/shaders/triangle.frag.spv"
     "src/main.cpp"
  "src/ErrorUtils.cpp" "src/VulkanContext.cpp")
 
@@ -46,9 +66,7 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
 )
 
-
 target_link_libraries(${PROJECT_NAME}
     "exqudens-cpp-vulkan"
     "glfw"
 )
-
