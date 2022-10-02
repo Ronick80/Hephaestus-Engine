@@ -10,6 +10,9 @@
 #include "exqudens/vulkan/Surface.hpp"
 #include "exqudens/vulkan/SwapChain.hpp"
 #include "exqudens/vulkan/Pipeline.hpp"
+#include "exqudens/vulkan/Queue.hpp"
+#include "exqudens/vulkan/CommandPool.hpp"
+#include "exqudens/vulkan/CommandBuffer.hpp"
 #include "utils.hpp"
 #include <GLFW/glfw3.h>
 
@@ -43,6 +46,9 @@ private:
     RenderPass renderPass_;
     std::vector<Framebuffer> framebuffers_;
     Pipeline pipeline_;
+    Queue graphicsQueue_;
+    CommandPool commandPool_;
+    CommandBuffer commandBuffer_;
 
     void createInstance();
      
@@ -61,5 +67,9 @@ private:
     void createFrameBuffer();
 
     void createGraphicsPipeline();
+
+    void createGraphicsQueue();
+
+    void createCommandBuffer();
 };
 

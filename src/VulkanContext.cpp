@@ -28,6 +28,8 @@ void VulkanContext::init(GLFWwindow* window) {
     createRenderPass();
     createFrameBuffer();
     createGraphicsPipeline();
+    createGraphicsQueue();
+    createCommandBuffer();
 }
 
 void VulkanContext::createInstance() {
@@ -409,6 +411,49 @@ void VulkanContext::createGraphicsPipeline()
             )
             .build();
         std::cout << std::format("pipeline: '{}'", (bool)pipeline_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+}
+
+void VulkanContext::createGraphicsQueue()
+{
+    try {
+        graphicsQueue_ = Queue::builder()
+            .setDevice(device_.value)
+            .setFamilyIndex(physicalDevice_.graphicsQueueCreateInfos.front().queueFamilyIndex)
+            .build();
+        std::cout << std::format("queue: '{}'", (bool)graphicsQueue_.value) << std::endl;
+    }
+    catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+}
+
+void VulkanContext::createCommandBuffer()
+{
+    try {
+        commandPool_ = CommandPool::builder()
+            .setDevice(device_.value)
+            .setCreateInfo(
+                vk::CommandPoolCreateInfo()
+                .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                .setQueueFamilyIndex(graphicsQueue_.familyIndex)
+            )
+            .build();
+        std::cout << std::format("command pool: '{}'", (bool)commandPool_.value) << std::endl;
+
+        commandBuffer_ = CommandBuffer::builder()
+            .setDevice(device_.value)
+            .setCreateInfo(
+                vk::CommandBufferAllocateInfo()
+                .setCommandPool(*commandPool_.reference())
+                .setCommandBufferCount(1u)
+                .setLevel(vk::CommandBufferLevel::ePrimary)
+            )
+            .build();
+        std::cout << std::format("command buffer: '{}'", (bool)commandBuffer_.value) << std::endl;
     }
     catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO()));
